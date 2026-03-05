@@ -10,4 +10,4 @@ fun main() {
 
     animal2.hacerSonido()
     animal2.moverse()
-<}>
+}
