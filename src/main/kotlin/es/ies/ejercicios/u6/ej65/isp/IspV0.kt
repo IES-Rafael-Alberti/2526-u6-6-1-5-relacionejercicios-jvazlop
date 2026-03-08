@@ -3,16 +3,33 @@ package es.ies.ejercicios.u6.ej65.isp
 import es.ies.ejercicios.u6.ej64.Persona
 
 /**
- * v0 (viola ISP): interfaz "gorda" que fuerza a implementar métodos que algunos clientes no necesitan.
+ * Interfaces segregadas por capacidades
  */
-interface RepositorioPersonasCompletoV0 {
-    fun guardar(persona: Persona)
+
+// Solo lectura
+interface BuscadorPersonas {
     fun buscar(nombre: String): Persona?
+}
+
+// Escritura
+interface GuardadorPersonas {
+    fun guardar(persona: Persona)
+}
+
+// Exportación
+interface ExportadorPersonas {
     fun exportarCsv(): String
+}
+
+// Borrado
+interface LimpiadorPersonas {
     fun borrarTodo()
 }
 
-class RepositorioMemoriaV0 : RepositorioPersonasCompletoV0 {
+/**
+ * Repositorio en memoria que implementa todas las capacidades
+ */
+class RepositorioMemoria : BuscadorPersonas, GuardadorPersonas, ExportadorPersonas, LimpiadorPersonas {
     private val map = mutableMapOf<String, Persona>()
 
     override fun guardar(persona: Persona) {
@@ -33,17 +50,35 @@ class RepositorioMemoriaV0 : RepositorioPersonasCompletoV0 {
 }
 
 /**
- * Cliente que solo necesita buscar, pero depende de una interfaz con demasiadas cosas.
+ * Cliente que solo necesita buscar
  */
-class BuscadorPersonasV0(private val repo: RepositorioPersonasCompletoV0) {
+class BuscadorPersonasCliente(private val repo: BuscadorPersonas) {
     fun buscar(nombre: String): Persona? = repo.buscar(nombre)
 }
 
-fun main() {
-    val repo = RepositorioMemoriaV0()
-    repo.guardar(Persona("Ana", 20))
-
-    val buscador = BuscadorPersonasV0(repo)
-    println("Buscar Ana -> ${buscador.buscar("Ana")?.resumen()}")
+/**
+ * Cliente que necesita guardar y buscar
+ */
+class GestorPersonasCliente(
+    private val buscador: BuscadorPersonas,
+    private val guardador: GuardadorPersonas
+) {
+    fun agregarYBuscar(persona: Persona): Persona? {
+        guardador.guardar(persona)
+        return buscador.buscar(persona.nombre)
+    }
 }
 
+fun main() {
+    val repo = RepositorioMemoria()
+
+    // Cliente que solo busca
+    val buscadorCliente = BuscadorPersonasCliente(repo)
+    repo.guardar(Persona("Ana", 20))
+    println("Buscar Ana -> ${buscadorCliente.buscar("Ana")?.resumen()}")
+
+    // Cliente que guarda y busca
+    val gestorCliente = GestorPersonasCliente(repo, repo)
+    val resultado = gestorCliente.agregarYBuscar(Persona("Luis", 19))
+    println("Buscar Luis -> ${resultado?.resumen()}")
+}
