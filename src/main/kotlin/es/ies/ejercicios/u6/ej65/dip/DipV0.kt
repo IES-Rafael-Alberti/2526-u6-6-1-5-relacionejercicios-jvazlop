@@ -1,15 +1,42 @@
 package es.ies.ejercicios.u6.ej65.dip
 
 import es.ies.ejercicios.u6.ej64.InformeCsv
+import es.ies.ejercicios.u6.ej64.InformeMarkdown
 import es.ies.ejercicios.u6.ej64.Persona
 import es.ies.ejercicios.u6.ej64.Resumible
 
 /**
- * v0 (viola DIP): un módulo de alto nivel depende de un detalle concreto: [InformeCsv].
- * El ejercicio consiste en introducir una abstracción e inyectar dependencias.
+ * Abstracción de un generador de informes
  */
-class ControladorInformesV0 {
-    private val generador = InformeCsv() // detalle concreto
+interface GeneradorInforme {
+    fun generar(titulo: String, items: List<Resumible>): String
+}
+
+/**
+ * Implementación concreta: CSV
+ */
+class GeneradorCsv : GeneradorInforme {
+    private val informeCsv = InformeCsv()
+
+    override fun generar(titulo: String, items: List<Resumible>): String =
+        informeCsv.generar(titulo, items)
+}
+
+/**
+ * Implementación concreta: Markdown
+ */
+class GeneradorMarkdown : GeneradorInforme {
+    private val informeMarkdown = InformeMarkdown()
+
+    override fun generar(titulo: String, items: List<Resumible>): String =
+        informeMarkdown.generar(titulo, items)
+}
+
+/**
+ * Módulo de alto nivel: controlador de informes
+ * Ahora depende solo de la abstracción GeneradorInforme
+ */
+class ControladorInformes(private val generador: GeneradorInforme) {
 
     fun imprimirListado(items: List<Resumible>) {
         val salida = generador.generar("Listado DIP", items)
@@ -18,12 +45,16 @@ class ControladorInformesV0 {
 }
 
 fun main() {
-    val controller = ControladorInformesV0()
-    controller.imprimirListado(
-        listOf(
-            Persona("Ana", 20),
-            Persona("Luis", 19),
-        ),
+    val items = listOf<Resumible>(
+        Persona("Ana", 20),
+        Persona("Luis", 19)
     )
-}
+    
+    val controladorCsv = ControladorInformes(GeneradorCsv())
+    println("[DIP] Informe CSV")
+    controladorCsv.imprimirListado(items)
 
+    val controladorMarkdown = ControladorInformes(GeneradorMarkdown())
+    println("\n[DIP] Informe Markdown")
+    controladorMarkdown.imprimirListado(items)
+}

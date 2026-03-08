@@ -12,24 +12,39 @@ package es.ies.ejercicios.u6.ej64
 // - Eliminar comentarios innecesarios o redundantes.
 
 /**
- * Representa un elemento que puede generar un resumen en texto.
+ * Representa cualquier elemento capaz de generar
+ * un resumen de sí mismo.
  */
 interface Resumible {
+
+    /**
+     * Devuelve un resumen en texto del objeto.
+     *
+     * @return texto resumido del elemento
+     */
     fun resumen(): String
 }
 
 /**
- * Plantilla para generar un informe en distintos formatos.
+ * Clase abstracta que define una plantilla para generar informes.
  *
- * Relación con el resto del ejercicio:
- * - [Persona] y [Alumno] implementan [Resumible] y se pueden incluir como elementos del informe.
- *
- * Nota: el método [generar] está bloqueado (no es `open`) para forzar un flujo común
- * y permitir que las subclases solo personalicen las partes variables.
+ * Implementa el patrón Template Method: el método [generar]
+ * define el flujo general del informe mientras que las subclases
+ * personalizan el formato del contenido.
  */
+
 abstract class PlantillaInforme : Resumible {
+
+    /**
+     * Genera un informe completo en formato texto.
+     *
+     * @param titulo título del informe
+     * @param items lista de elementos resumibles
+     * @return informe formateado
+     */
+
     fun generar(titulo: String, items: List<Resumible>): String {
-        // Crea el StringBuilder
+
         val sb = StringBuilder()
 
         sb.appendLine(cabecera(titulo))
@@ -39,55 +54,109 @@ abstract class PlantillaInforme : Resumible {
         }
 
         sb.appendLine(pie())
-        return sb.toString() // devolver el string
+
+        return sb.toString()
     }
+
+    /**
+     * Devuelve la cabecera del informe.
+     */
 
     protected open fun cabecera(titulo: String): String = titulo
 
+    /**
+     * Formatea un elemento individual del informe.
+     */
+
     protected abstract fun formatearItem(item: Resumible): String
+
+    /**
+     * Devuelve el pie del informe.
+     */
 
     protected open fun pie(): String = "-- fin --"
 
     override fun resumen(): String = "PlantillaInforme"
 }
 
+/**
+ * Genera informes en formato Markdown.
+ */
+
 class InformeMarkdown : PlantillaInforme() {
+
     override fun cabecera(titulo: String): String = "# $titulo"
 
     override fun formatearItem(item: Resumible): String = "- ${item.resumen()}"
 }
 
+/**
+ * Genera informes en formato CSV.
+ */
+
 class InformeCsv : PlantillaInforme() {
+
     override fun cabecera(titulo: String): String = "titulo,$titulo\nitem"
 
     override fun formatearItem(item: Resumible): String = item.resumen().replace(",", ";")
 }
 
+/**
+ * Representa una persona con nombre y edad.
+ *
+ * @property nombre nombre de la persona
+ * @property edad edad de la persona
+ */
+
 open class Persona(
     val nombre: String,
     val edad: Int,
 ) : Resumible {
+
     init {
         println("[Persona:init] nombre=$nombre edad=$edad")
     }
+
+    /**
+     * Constructor secundario que crea una persona
+     * con edad por defecto igual a 0.
+     */
 
     constructor(nombre: String) : this(nombre, edad = 0) {
         println("[Persona:secondary] constructor(nombre)")
     }
 
+    /**
+     * Devuelve un resumen con nombre y edad.
+     */
+
     override fun resumen(): String = "$nombre ($edad)"
 }
 
+/**
+ * Representa un alumno que hereda de [Persona]
+ * y añade el curso en el que está matriculado.
+ */
+
 class Alumno : Persona {
+
     val curso: String
 
+    /**
+     * Constructor principal del alumno.
+     */
+
     constructor(nombre: String, edad: Int, curso: String) : super(nombre, edad) {
-        // Asignar curso
         this.curso = curso
         println("[Alumno:secondary] nombre=$nombre edad=$edad curso=$curso")
     }
 
-    constructor(nombre: String, curso: String) : this(nombre, edad = 0, curso = curso) {
+    /**
+     * Constructor secundario con edad por defecto.
+     */
+
+    constructor(nombre: String, curso: String) :
+            this(nombre, edad = 0, curso = curso) {
         println("[Alumno:secondary] constructor(nombre, curso)")
     }
 
@@ -95,19 +164,36 @@ class Alumno : Persona {
 }
 
 /**
- * Ejemplo para discutir "comentarios importantes":
+ * Registro simple de personas ordenadas por nombre.
  *
- * Se normaliza el nombre para evitar registros duplicados por diferencias de espacios o mayúsculas/minúsculas.
+ * Para evitar duplicados, el nombre se normaliza eliminando
+ * espacios y convirtiendo a minúsculas.
  */
+
 class RegistroPersonas {
+
     private val personasPorNombre = mutableMapOf<String, Persona>()
+
+    /**
+     * Registra una persona en el sistema.
+     */
 
     fun registrar(persona: Persona) {
         val clave = normalizarNombre(persona.nombre)
         personasPorNombre[clave] = persona
     }
 
-    fun buscar(nombre: String): Persona? = personasPorNombre[normalizarNombre(nombre)]
+    /**
+     * Busca una persona por nombre.
+     */
+
+    fun buscar(nombre: String): Persona? =
+        personasPorNombre[normalizarNombre(nombre)]
+
+    /**
+     * Normaliza un nombre eliminando espacios
+     * y convirtiéndolo a minúsculas.
+     */
 
     private fun normalizarNombre(nombre: String): String {
         return nombre.trim().lowercase()
