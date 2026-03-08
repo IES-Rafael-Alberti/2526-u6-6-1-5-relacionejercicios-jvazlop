@@ -1,5 +1,8 @@
 package es.ies.ejercicios.u6.ej65.dip
 
+import es.ies.ejercicios.u6.ej64.InformeCsv
+import es.ies.ejercicios.u6.ej64.InformeMarkdown
+import es.ies.ejercicios.u6.ej64.Persona
 import es.ies.ejercicios.u6.ej64.Resumible
 
 /**
@@ -10,51 +13,48 @@ interface GeneradorInforme {
 }
 
 /**
- * Implementación concreta: Markdown
- */
-class GeneradorMarkdown : GeneradorInforme {
-    override fun generar(titulo: String, items: List<Resumible>): String =
-        buildString {
-            appendLine("# $titulo")
-            for (item in items) appendLine("- ${item.resumen()}")
-        }
-}
-
-/**
  * Implementación concreta: CSV
  */
 class GeneradorCsv : GeneradorInforme {
+    private val informeCsv = InformeCsv()
+
     override fun generar(titulo: String, items: List<Resumible>): String =
-        buildString {
-            appendLine("titulo,$titulo")
-            appendLine("item")
-            for (item in items) appendLine(item.resumen().replace(",", ";"))
-        }
+        informeCsv.generar(titulo, items)
 }
 
 /**
- * Módulo de alto nivel: servicio de informes
+ * Implementación concreta: Markdown
  */
-class ServicioInforme(private val generador: GeneradorInforme) {
+class GeneradorMarkdown : GeneradorInforme {
+    private val informeMarkdown = InformeMarkdown()
 
-    fun ejecutar(titulo: String, items: List<Resumible>) {
-        val salida = generador.generar(titulo, items)
+    override fun generar(titulo: String, items: List<Resumible>): String =
+        informeMarkdown.generar(titulo, items)
+}
+
+/**
+ * Módulo de alto nivel: controlador de informes
+ * Ahora depende solo de la abstracción GeneradorInforme
+ */
+class ControladorInformes(private val generador: GeneradorInforme) {
+
+    fun imprimirListado(items: List<Resumible>) {
+        val salida = generador.generar("Listado DIP", items)
         println(salida)
     }
 }
 
 fun main() {
-
     val items = listOf<Resumible>(
-        object : Resumible { override fun resumen() = "Elemento A" },
-        object : Resumible { override fun resumen() = "Elemento B" }
+        Persona("Ana", 20),
+        Persona("Luis", 19)
     )
+    
+    val controladorCsv = ControladorInformes(GeneradorCsv())
+    println("[DIP] Informe CSV")
+    controladorCsv.imprimirListado(items)
 
-    val servicioMarkdown = ServicioInforme(GeneradorMarkdown())
-    println("[DIP] Informe Markdown")
-    servicioMarkdown.ejecutar("Informe DIP", items)
-
-    val servicioCsv = ServicioInforme(GeneradorCsv())
-    println("\n[DIP] Informe CSV")
-    servicioCsv.ejecutar("Informe DIP", items)
+    val controladorMarkdown = ControladorInformes(GeneradorMarkdown())
+    println("\n[DIP] Informe Markdown")
+    controladorMarkdown.imprimirListado(items)
 }
