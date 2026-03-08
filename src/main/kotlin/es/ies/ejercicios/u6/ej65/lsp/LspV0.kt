@@ -3,42 +3,70 @@ package es.ies.ejercicios.u6.ej65.lsp
 import es.ies.ejercicios.u6.ej64.Persona
 
 /**
- * Contrato: un repositorio que permite guardar y buscar personas.
+ * Capacidad de lectura
  */
-open class RepositorioPersonasV0 {
-    private val map = mutableMapOf<String, Persona>()
-
-    open fun guardar(persona: Persona) {
-        map[persona.nombre] = persona
-    }
-
-    open fun buscar(nombre: String): Persona? = map[nombre]
+interface BuscadorPersonas {
+    fun buscar(nombre: String): Persona?
 }
 
 /**
- * v0 (posible violación de LSP): una subclase rompe el contrato esperado de "guardar".
- * El código cliente que acepta [RepositorioPersonasV0] puede fallar al sustituirlo por esta subclase.
+ * Capacidad de escritura
  */
-class RepositorioSoloLecturaV0 : RepositorioPersonasV0() {
-    override fun guardar(persona: Persona) {
-        throw UnsupportedOperationException("Repositorio en modo solo lectura")
-    }
+interface GuardadorPersonas {
+    fun guardar(persona: Persona)
 }
 
-fun cliente(repo: RepositorioPersonasV0) {
-    repo.guardar(Persona("Ana", 20))
+/**
+ * Repositorio completo (lectura + escritura)
+ */
+class RepositorioPersonas : BuscadorPersonas, GuardadorPersonas {
+
+    private val map = mutableMapOf<String, Persona>()
+
+    override fun guardar(persona: Persona) {
+        map[persona.nombre] = persona
+    }
+
+    override fun buscar(nombre: String): Persona? = map[nombre]
+}
+
+/**
+ * Repositorio solo lectura
+ */
+class RepositorioSoloLectura(
+    private val datos: Map<String, Persona>
+) : BuscadorPersonas {
+
+    override fun buscar(nombre: String): Persona? = datos[nombre]
+}
+
+/**
+ * Cliente que necesita leer y escribir
+ */
+fun clienteCompleto(
+    repo: BuscadorPersonas,
+    guardador: GuardadorPersonas
+) {
+    guardador.guardar(Persona("Ana", 20))
+    println("Buscar Ana -> ${repo.buscar("Ana")?.resumen()}")
+}
+
+/**
+ * Cliente que solo necesita leer
+ */
+fun clienteSoloLectura(repo: BuscadorPersonas) {
     println("Buscar Ana -> ${repo.buscar("Ana")?.resumen()}")
 }
 
 fun main() {
-    println("[LSP:v0] Repositorio normal (ok)")
-    cliente(RepositorioPersonasV0())
 
-    println("\n[LSP:v0] Repositorio solo lectura (rompe sustitución)")
-    try {
-        cliente(RepositorioSoloLecturaV0())
-    } catch (e: Exception) {
-        println("ERROR: ${e::class.simpleName}: ${e.message}")
-    }
+    println("[ISP/LSP:v1] Repositorio completo")
+    val repo = RepositorioPersonas()
+    clienteCompleto(repo, repo)
+
+    println("\n[ISP/LSP:v1] Repositorio solo lectura")
+    val datos = mapOf("Ana" to Persona("Ana", 20))
+    val repoLectura = RepositorioSoloLectura(datos)
+
+    clienteSoloLectura(repoLectura)
 }
-
